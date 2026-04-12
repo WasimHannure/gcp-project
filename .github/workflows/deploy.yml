@@ -5,8 +5,10 @@ on:
     branches: [ main ]
 
 env:
-  REGISTRY: us-central1-docker.pkg.dev
+  PROJECT_ID: bubbly-mantis-435212-k4
+  REPOSITORY: openclaw
   IMAGE_NAME: openclaw
+  REGISTRY: us-central1-docker.pkg.dev
 
 permissions:
   contents: read
