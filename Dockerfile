@@ -1,17 +1,17 @@
 # Multi-stage build
-FROM golang:1.21 AS builder
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Copy go mod files if they exist
-COPY go.* ./
+# Copy go mod files
+COPY go.mod go.sum* ./
 RUN go mod download || true
 
 # Copy source code
-COPY . .
+COPY *.go ./
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o openclaw . || echo "Go build skipped"
+RUN CGO_ENABLED=0 GOOS=linux go build -o openclaw .
 
 # Final image
 FROM gcr.io/distroless/base-debian12
@@ -19,11 +19,8 @@ FROM gcr.io/distroless/base-debian12
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/openclaw /app/openclaw || true
+COPY --from=builder /app/openclaw /app/openclaw
 
-# Default to running a simple server if binary not built
-# Replace this with your actual application
 EXPOSE 8080
 
 ENTRYPOINT ["/app/openclaw"]
-CMD ["--port", "8080"]
