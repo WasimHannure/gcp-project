@@ -8,6 +8,10 @@ env:
   REGISTRY: us-central1-docker.pkg.dev
   IMAGE_NAME: openclaw
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
