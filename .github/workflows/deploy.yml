@@ -36,14 +36,18 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-        docker tag ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-                   ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:latest
+        IMAGE_TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        IMAGE_TAG_LATEST="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest"
+        echo "Building image: ${IMAGE_TAG}"
+        docker build -t ${IMAGE_TAG} .
+        docker tag ${IMAGE_TAG} ${IMAGE_TAG_LATEST}
 
     - name: Push image to Artifact Registry
       run: |
-        docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:latest
+        IMAGE_TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        IMAGE_TAG_LATEST="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest"
+        docker push ${IMAGE_TAG}
+        docker push ${IMAGE_TAG_LATEST}
 
     - name: Get GKE credentials
       run: |
@@ -62,9 +66,9 @@ jobs:
       run: |
         helm upgrade --install openclaw ./helm/openclaw \
           -n openclaw --create-namespace \
-          --set image.repository=${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }} \
+          --set image.repository=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }} \
           --set image.tag=${{ github.sha }} \
-          --set gcpProject=${{ secrets.GCP_PROJECT }}
+          --set gcpProject=${{ env.PROJECT_ID }}
 
     - name: Verify deployment
       run: |
