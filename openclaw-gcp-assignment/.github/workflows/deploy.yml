@@ -1,0 +1,67 @@
+name: Deploy OpenClaw
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY: us-central1-docker.pkg.dev
+  IMAGE_NAME: openclaw
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+    - name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker authentication
+      run: |
+        gcloud auth configure-docker ${{ env.REGISTRY }}
+
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+        docker tag ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+                   ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:latest
+
+    - name: Push image to Artifact Registry
+      run: |
+        docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }}:latest
+
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} \
+          --region ${{ secrets.GCP_REGION }}
+
+    - name: Create image pull secret
+      run: |
+        kubectl create secret docker-registry artifact-registry-secret \
+          --docker-server=${{ env.REGISTRY }} \
+          --docker-username=_json_key \
+          --docker-password="$(cat ${GOOGLE_APPLICATION_CREDENTIALS})" \
+          -n openclaw --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Deploy with Helm
+      run: |
+        helm upgrade --install openclaw ./helm/openclaw \
+          -n openclaw --create-namespace \
+          --set image.repository=${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT }}/openclaw/${{ env.IMAGE_NAME }} \
+          --set image.tag=${{ github.sha }} \
+          --set gcpProject=${{ secrets.GCP_PROJECT }}
+
+    - name: Verify deployment
+      run: |
+        kubectl rollout status deployment/openclaw -n openclaw --timeout=5m
+        kubectl get pods -n openclaw
+        kubectl get svc -n openclaw

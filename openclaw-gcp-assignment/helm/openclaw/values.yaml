@@ -1,0 +1,30 @@
+image:
+  repository: us-central1-docker.pkg.dev/YOUR_PROJECT_ID/openclaw/openclaw
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecret:
+  name: artifact-registry-secret
+
+gcpProject: YOUR_PROJECT_ID
+
+service:
+  port: 80
+  targetPort: 8080
+  type: ClusterIP
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+replicaCount: 2
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
