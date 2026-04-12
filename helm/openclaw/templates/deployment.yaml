@@ -16,7 +16,7 @@ spec:
     spec:
       serviceAccountName: openclaw-sa
       imagePullSecrets:
-      - name:{{ .Values.imagePullSecret.name }}
+      - name: {{ .Values.imagePullSecret.name }}
       containers:
       - name: openclaw
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

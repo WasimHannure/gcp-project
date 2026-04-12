@@ -58,8 +58,8 @@ jobs:
       run: |
         kubectl create secret docker-registry artifact-registry-secret \
           --docker-server=${{ env.REGISTRY }} \
-          --docker-username=_json_key \
-          --docker-password="$(cat ${GOOGLE_APPLICATION_CREDENTIALS})" \
+          --docker-username=oauth2accesstoken \
+          --docker-password="$(gcloud auth print-access-token)" \
           -n openclaw --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Deploy with Helm

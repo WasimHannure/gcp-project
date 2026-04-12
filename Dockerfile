@@ -1,26 +1,12 @@
-# Multi-stage build
-FROM golang:1.21-alpine AS builder
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy go mod files
-COPY go.mod go.sum* ./
-RUN go mod download || true
+COPY requirement.txt .
+RUN pip install -r requirement.txt
 
-# Copy source code
-COPY *.go ./
-
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o openclaw .
-
-# Final image
-FROM gcr.io/distroless/base-debian12
-
-WORKDIR /app
-
-# Copy binary from builder
-COPY --from=builder /app/openclaw /app/openclaw
+COPY . .
 
 EXPOSE 8080
 
-ENTRYPOINT ["/app/openclaw"]
+CMD ["python", "app.py"]
