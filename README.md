@@ -43,3 +43,5 @@ Verify
   run: |
     kubectl get pods -n openclaw
     kubectl get ingress -n openclaw
+
+
